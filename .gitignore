@@ -1,0 +1,258 @@
+# ===============================
+# TicTacToe Arena - Complete .gitignore
+# ===============================
+
+# ===============================
+# Environment Variables (CRITICAL)
+# ===============================
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+*.env
+!.env.example
+
+# ===============================
+# Frontend - Node.js / npm / Vite / React
+# ===============================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+/fe/build/
+/fe/dist/
+dist/
+build/
+
+# Vite
+/fe/.vite/
+*.local
+
+# Testing
+coverage/
+.nyc_output/
+
+# ESLint cache
+.eslintcache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# ===============================
+# Backend - Python / Flask
+# ===============================
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+.env/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Flask
+instance/
+.webassets-cache
+
+# Flask-Migrate
+*.db
+
+# Logs
+logs/
+*.log
+verification.log
+verification_output.txt
+
+# ===============================
+# Database Files
+# ===============================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# PostgreSQL
+*.pgsql
+
+# Redis
+dump.rdb
+
+# ===============================
+# Docker
+# ===============================
+# Docker Compose override files (local dev customizations)
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Docker volumes data (if stored locally)
+.docker-data/
+pgdata/
+redis-data/
+
+# ===============================
+# IDE / Editors
+# ===============================
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains (PyCharm, WebStorm, IntelliJ)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+
+# ===============================
+# Operating System Files
+# ===============================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+
+# ===============================
+# Temporary Files
+# ===============================
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# ===============================
+# Secrets & Credentials
+# ===============================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# Firebase / Supabase service account
+*-service-account*.json
+firebase-adminsdk*.json
+
+# ===============================
+# Miscellaneous
+# ===============================
+# Snapshots (if generated for debugging)
+snapshots/
+
+# Test artifacts
+*.har
+
+# Lock files (optional - may want to track package-lock.json)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# mypy
+.mypy_cache/
+
+# Ruff
+.ruff_cache/
+
+# ===============================
+# Project-Specific
+# ===============================
+# Keep sample/example files
+!active_sample_account.csv
+
+# Documentation builds
+docs/_build/
+
+# State files (game state, etc.)
+be/services/gameServices/state/*.json
+!be/services/gameServices/state/.gitkeep
+
+# Migration lock files
+*.pyc

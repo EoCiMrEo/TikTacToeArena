@@ -1,0 +1,30 @@
+Imagine you are a master, the best in software development, distributed systems, cybersecurity, and designing with years experience, and you have encoutered many critical issues. Frist i will need you to understand the entire project. Please read the whole project folder exclude all the files and folder like "env, .env, environment, .vscode, .git, .next, etc"
+
+This is an online game named tiktac toe arena. And all the function on client side (fe) works good but those are just for the demo, we haven't implement any server for this project yet.
+
+This project is developed based on the distributed system architecture (microservices). which means we will have multiple servers running on different machines and each server will have its own database. And each server will be responsible for different part of the application. we can use docker to containerize each server and run them on different machines.
+
+---
+Good now here is some more information for you, the frontend and backend should be run as docker containers, for the backend each services will have its own dockerfile and docker-compose.yml file. we will have 3 services for backend, 1 for authentication & authorization (auth), 1 for user profile (user_profile), and 1 for game data (game_data). And I have a question for you, is there any other services that we need to add to the backend?
+---
+sounds good let's work on it one by one service by service. Let's first work on Auth Service. The auth service will use the supabase as the database. I want to implement the jwt for the auth service and the tokens should be stored in cookies for security purpose.
+The auth service should have the following features:
+- User Registration
+- User Login
+- User Logout
+- User Password Reset (Change Password)
+- User Email (Account) Verification
+
+---
+Now all the function for auth service is done, let's move to user_profile service. The user_profile service will use the postgresql running on docker as the database. The user_profiles service this is used for storing all information about user_profiles like total_wins, total_lose, win_rate, elo, first_name, last_name, current_rank, last_season_rank, etc. This user_profile service should get access_token from the auth service and use it to verify the user's identity. This user_profile service will be used by the game_data service to get the user's information.
+
+The user_profile service should have the following features:
+- User Profile Update
+- User Profile Get
+- User Profile Delete
+- User Profile List
+- User Profile Search
+- etc
+You should re-read the "Implementation Plan.resolved.0" file to understand the architecture of the project.
+---
+Now we have already successfully implemented the gameServices.

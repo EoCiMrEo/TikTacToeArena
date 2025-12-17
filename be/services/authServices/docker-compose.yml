@@ -1,0 +1,55 @@
+services:
+  auth_service:
+    build: .
+    container_name: tictactoe-auth-service
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_APP=main.py
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:4028}
+      - USER_PROFILE_SERVICE_URL=${USER_PROFILE_SERVICE_URL:-http://tictactoe-userprofile_service:5000}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-dev_internal_key}
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - tictactoe-auth-network
+      - tictactoe-userprofile_network
+
+  # Optional: Local PostgreSQL for development (comment out if using Supabase)
+  # auth_db:
+  #   image: postgres:15-alpine
+  #   container_name: tictactoe-auth-db
+  #   environment:
+  #     - POSTGRES_USER=auth_user
+  #     - POSTGRES_PASSWORD=auth_pass
+  #     - POSTGRES_DB=auth_db
+  #   ports:
+  #     - "5433:5432"
+  #   volumes:
+  #     - auth_pg_data:/var/lib/postgresql/data
+  #   networks:
+  #     - tictactoe-network
+
+networks:
+  tictactoe-auth-network:
+    name: tictactoe-auth-network
+    driver: bridge
+  tictactoe-userprofile_network:
+    external: true
+
+# Uncomment if using local PostgreSQL
+# volumes:
+#   auth_pg_data:

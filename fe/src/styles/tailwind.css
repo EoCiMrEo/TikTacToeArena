@@ -1,0 +1,306 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary Colors */
+    --color-primary: #1E40AF; /* blue-800 */
+    --color-primary-50: #EFF6FF; /* blue-50 */
+    --color-primary-100: #DBEAFE; /* blue-100 */
+    --color-primary-200: #BFDBFE; /* blue-200 */
+    --color-primary-500: #3B82F6; /* blue-500 */
+    --color-primary-600: #2563EB; /* blue-600 */
+    --color-primary-700: #1D4ED8; /* blue-700 */
+    --color-primary-900: #1E3A8A; /* blue-900 */
+    --color-primary-foreground: #FFFFFF; /* white */
+
+    /* Secondary Colors */
+    --color-secondary: #0F766E; /* teal-700 */
+    --color-secondary-50: #F0FDFA; /* teal-50 */
+    --color-secondary-100: #CCFBF1; /* teal-100 */
+    --color-secondary-200: #99F6E4; /* teal-200 */
+    --color-secondary-500: #14B8A6; /* teal-500 */
+    --color-secondary-600: #0D9488; /* teal-600 */
+    --color-secondary-800: #115E59; /* teal-800 */
+    --color-secondary-900: #134E4A; /* teal-900 */
+    --color-secondary-foreground: #FFFFFF; /* white */
+
+    /* Accent Colors */
+    --color-accent: #F59E0B; /* amber-500 */
+    --color-accent-50: #FFFBEB; /* amber-50 */
+    --color-accent-100: #FEF3C7; /* amber-100 */
+    --color-accent-200: #FDE68A; /* amber-200 */
+    --color-accent-400: #FBBF24; /* amber-400 */
+    --color-accent-600: #D97706; /* amber-600 */
+    --color-accent-700: #B45309; /* amber-700 */
+    --color-accent-800: #92400E; /* amber-800 */
+    --color-accent-900: #78350F; /* amber-900 */
+    --color-accent-foreground: #FFFFFF; /* white */
+
+    /* Background Colors */
+    --color-background: #F8FAFC; /* slate-50 */
+    --color-background-secondary: #F1F5F9; /* slate-100 */
+    --color-surface: #FFFFFF; /* white */
+    --color-surface-secondary: #F8FAFC; /* slate-50 */
+
+    /* Text Colors */
+    --color-text-primary: #1F2937; /* gray-800 */
+    --color-text-secondary: #6B7280; /* gray-500 */
+    --color-text-tertiary: #9CA3AF; /* gray-400 */
+    --color-text-inverse: #FFFFFF; /* white */
+
+    /* Status Colors */
+    --color-success: #059669; /* emerald-600 */
+    --color-success-50: #ECFDF5; /* emerald-50 */
+    --color-success-100: #D1FAE5; /* emerald-100 */
+    --color-success-200: #A7F3D0; /* emerald-200 */
+    --color-success-500: #10B981; /* emerald-500 */
+    --color-success-700: #047857; /* emerald-700 */
+    --color-success-800: #065F46; /* emerald-800 */
+    --color-success-900: #064E3B; /* emerald-900 */
+    --color-success-foreground: #FFFFFF; /* white */
+
+    --color-warning: #D97706; /* amber-600 */
+    --color-warning-50: #FFFBEB; /* amber-50 */
+    --color-warning-100: #FEF3C7; /* amber-100 */
+    --color-warning-200: #FDE68A; /* amber-200 */
+    --color-warning-500: #F59E0B; /* amber-500 */
+    --color-warning-700: #B45309; /* amber-700 */
+    --color-warning-800: #92400E; /* amber-800 */
+    --color-warning-900: #78350F; /* amber-900 */
+    --color-warning-foreground: #FFFFFF; /* white */
+
+    --color-error: #DC2626; /* red-600 */
+    --color-error-50: #FEF2F2; /* red-50 */
+    --color-error-100: #FEE2E2; /* red-100 */
+    --color-error-200: #FECACA; /* red-200 */
+    --color-error-500: #EF4444; /* red-500 */
+    --color-error-700: #B91C1C; /* red-700 */
+    --color-error-800: #991B1B; /* red-800 */
+    --color-error-900: #7F1D1D; /* red-900 */
+    --color-error-foreground: #FFFFFF; /* white */
+
+    /* Border Colors */
+    --color-border: #E5E7EB; /* gray-200 */
+    --color-border-secondary: #D1D5DB; /* gray-300 */
+    --color-border-tertiary: #F3F4F6; /* gray-100 */
+
+    /* Shadow Colors */
+    --color-shadow: rgba(0, 0, 0, 0.1);
+    --color-shadow-light: rgba(0, 0, 0, 0.05);
+    --color-shadow-medium: rgba(0, 0, 0, 0.15);
+
+    /* Typography */
+    --font-heading: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-caption: 'Inter', sans-serif;
+    --font-data: 'JetBrains Mono', monospace;
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+
+    /* Transitions */
+    --transition-fast: 150ms ease-out;
+    --transition-normal: 250ms ease-out;
+    --transition-slow: 300ms ease-out;
+
+    /* Z-Index */
+    --z-dropdown: 50;
+    --z-sticky: 60;
+    --z-fixed: 70;
+    --z-modal-backdrop: 80;
+    --z-context-header: 90;
+    --z-bottom-nav: 100;
+    --z-modal: 200;
+    --z-toast: 300;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-text-primary font-body;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold;
+  }
+
+  .font-data {
+    font-family: var(--font-data);
+  }
+}
+
+@layer components {
+  /* Gaming specific animations */
+  .pulse-slow {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .scale-press {
+    transform: scale(0.98);
+    transition: transform var(--transition-fast);
+  }
+
+  /* Glassmorphism utilities */
+  .glass {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* Game board specific styles */
+  .game-cell {
+    @apply aspect-square border border-border-secondary bg-surface rounded-sm transition-all duration-150 hover:bg-surface-secondary;
+  }
+
+  .game-cell:hover {
+    transform: scale(1.02);
+  }
+
+  /* Status indicators */
+  .status-online {
+    @apply bg-success w-2 h-2 rounded-full animate-pulse;
+  }
+
+  .status-offline {
+    @apply bg-text-tertiary w-2 h-2 rounded-full;
+  }
+
+  .status-in-game {
+    @apply bg-warning w-2 h-2 rounded-full pulse-slow;
+  }
+
+  /* Navigation specific styles */
+  .nav-tab {
+    @apply flex flex-col items-center justify-center px-2 py-1 text-xs font-medium transition-colors duration-150;
+  }
+
+  .nav-tab.active {
+    @apply text-primary;
+  }
+
+  .nav-tab:not(.active) {
+    @apply text-text-secondary;
+  }
+
+  /* Tooltip styles */
+  .tooltip {
+    @apply absolute z-50 px-2 py-1 text-xs font-medium text-white bg-text-primary rounded shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none;
+  }
+
+  .tooltip.show {
+    @apply opacity-100;
+  }
+
+  /* Card styles for gaming context */
+  .game-card {
+    @apply bg-surface border border-border rounded-lg shadow-sm p-4 transition-shadow duration-150;
+  }
+
+  .game-card:hover {
+    @apply shadow-md;
+  }
+
+  /* Button press feedback */
+  .btn-press:active {
+    @apply scale-press;
+  }
+}
+
+@layer utilities {
+  /* Safe area utilities for mobile */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Gaming specific utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Focus utilities for gaming accessibility */
+  .focus-game {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 250ms ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 250ms ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 150ms ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

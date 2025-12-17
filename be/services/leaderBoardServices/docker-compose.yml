@@ -1,0 +1,17 @@
+services:
+  leaderboard_service:
+    build: .
+    ports:
+      - "5004:5004"
+    environment:
+      - REDIS_URL=redis://leaderboard_redis:6379/0
+      - EVENT_BUS_REDIS_URL=redis://host.docker.internal:6382/0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - leaderboard_redis
+
+  leaderboard_redis:
+    image: redis:7-alpine
+    ports:
+      - "6384:6379"

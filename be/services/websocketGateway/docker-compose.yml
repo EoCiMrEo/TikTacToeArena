@@ -1,0 +1,16 @@
+services:
+  websocket_gateway:
+    build: .
+    ports:
+      - "5005:5005"
+    environment:
+      - REDIS_URL=redis://ws_redis:6379/0
+      - JWT_SECRET_KEY=dev_secret_key_change_in_production
+      - FRONTEND_URL=http://localhost:4028
+    depends_on:
+      - ws_redis
+
+  ws_redis:
+    image: redis:7-alpine
+    ports:
+      - "6382:6379"

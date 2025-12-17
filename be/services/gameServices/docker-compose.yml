@@ -1,0 +1,36 @@
+services:
+  game_service:
+    build: .
+    ports:
+      - "5002:5002"
+    environment:
+      - DATABASE_URL=postgresql://game_user:game_pass@game_db:5432/game_db
+      # Internal communication to game_redis should be on 6379 (container port)
+      - REDIS_URL=redis://game_redis:6379/0
+      - WS_GATEWAY_URL=http://websocket_gateway:5005
+      - EVENT_BUS_REDIS_URL=redis://host.docker.internal:6382/0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - game_db
+      - game_redis
+
+  game_db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=game_user
+      - POSTGRES_PASSWORD=game_pass
+      - POSTGRES_DB=game_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - game_pg_data:/var/lib/postgresql/data
+
+  game_redis:
+    image: redis:7-alpine
+    ports:
+      # Host:Container
+      - "6380:6379"
+
+volumes:
+  game_pg_data:

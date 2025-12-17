@@ -1,0 +1,54 @@
+services:
+  tictactoe-userprofile_service:
+    build: .
+    container_name: tictactoe-userprofile_service
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://tictactoe-userprofile_user:tictactoe-userprofile_password@tictactoe-userprofile_db:5432/tictactoe-userprofile_db
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - REDIS_URL=redis://tictactoe-userprofile_redis:6379/0
+      - EVENT_BUS_REDIS_URL=redis://host.docker.internal:6382/0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - tictactoe-userprofile_db
+      - tictactoe-userprofile_redis
+    networks:
+      - tictactoe-userprofile_network
+
+  tictactoe-userprofile_redis:
+    image: redis:7-alpine
+    container_name: tictactoe-userprofile_redis
+    restart: always
+    ports:
+      - "6383:6379"
+    networks:
+      - tictactoe-userprofile_network
+
+
+  tictactoe-userprofile_db:
+    image: postgres:15-alpine
+    container_name: tictactoe-userprofile_db
+    restart: always
+    environment:
+      - POSTGRES_USER=tictactoe-userprofile_user
+      - POSTGRES_PASSWORD=tictactoe-userprofile_password
+      - POSTGRES_DB=tictactoe-userprofile_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - tictactoe-userprofile_pg_data:/var/lib/postgresql/data
+    networks: 
+      - tictactoe-userprofile_network
+
+networks:
+  tictactoe-userprofile_network:
+    name: tictactoe-userprofile_network
+    driver: bridge
+
+volumes:
+  tictactoe-userprofile_pg_data:
