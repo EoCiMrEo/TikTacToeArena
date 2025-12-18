@@ -2,12 +2,24 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
+# Install system dependencies for psycopg2
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Expose port 5002
+# Make startup script executable
+RUN chmod +x start.sh
+
+# Set Flask app environment variable
+ENV FLASK_APP=main.py
+
+# Expose port (from original Dockerfile)
 EXPOSE 5002
 
-CMD ["python", "main.py"]
+CMD ["./start.sh"]

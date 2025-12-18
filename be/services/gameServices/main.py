@@ -11,6 +11,11 @@ def create_app(config_class=Config):
 
     # Initialize extensions
     db.init_app(app)
+    from extensions import migrate
+    migrate.init_app(app, db)
+    
+    # Import models (required for migrations)
+    from db.models.game import Game
 
     # Register Blueprints
     app.register_blueprint(game_bp)
@@ -28,7 +33,12 @@ def create_app(config_class=Config):
 
 app = create_app()
 
+# Initialize Timeout Manager
+from timeout_manager import TimeoutManager
+timeout_manager = TimeoutManager(app)
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all() # Create tables if not exist (simple migration)
+    # Start background thread
+    timeout_manager.start()
+    
     app.run(host='0.0.0.0', port=Config.PORT)

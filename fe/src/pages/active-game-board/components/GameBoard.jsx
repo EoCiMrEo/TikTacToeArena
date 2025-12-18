@@ -121,6 +121,12 @@ const GameBoard = ({
               <span>Waiting for opponent...</span>
             </>
           )}
+          {gameStatus === 'abandoned' && (
+            <>
+              <Icon name="AlertTriangle" size={16} />
+              <span>Game Abandoned</span>
+            </>
+          )}
         </div>
       </div>
 

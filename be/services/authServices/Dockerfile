@@ -21,4 +21,10 @@ COPY . .
 EXPOSE 5001
 
 # Command to run the application using Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "main:app"]
+# Make startup script executable
+RUN chmod +x start.sh
+
+# Set Flask app environment variable
+ENV FLASK_APP=main.py
+
+CMD ["./start.sh"]

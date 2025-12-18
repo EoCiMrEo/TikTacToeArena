@@ -13,4 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["flask", "run", "--host=0.0.0.0"]
+# Make startup script executable
+RUN chmod +x start.sh
+
+# Set Flask app environment variable
+ENV FLASK_APP=app.py
+
+CMD ["./start.sh"]

@@ -123,11 +123,13 @@ const ActiveGameBoard = () => {
 
       const onGameOver = (data) => {
           console.log("Game Over:", data);
-          setGameStatus('completed');
+          setGameStatus(data.status); // completed or abandoned
           setWinningCells(data.winning_line || []);
           
           let resultType = 'draw';
-          if (data.winner_id) {
+          if (data.status === 'abandoned') {
+             resultType = 'abandoned';
+          } else if (data.winner_id) {
               resultType = data.winner_id === user.id ? 'win' : 'loss';
           }
           

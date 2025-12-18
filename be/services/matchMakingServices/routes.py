@@ -16,6 +16,25 @@ def join_queue():
     if not user_id or elo is None:
         return jsonify({'error': 'Missing user_id or elo'}), 400
 
+    # 0. Check if user is already in an active game
+    try:
+        from config import Config
+        import requests
+        # Call Game Service
+        game_url = f"{Config.GAME_SERVICE_URL}/games/active/{user_id}"
+        response = requests.get(game_url, timeout=2)
+        if response.status_code == 200:
+            active_games = response.json()
+            if active_games and len(active_games) > 0:
+                 return jsonify({'error': 'User already in an active game', 'code': 'ACTIVE_GAME'}), 400
+    except Exception as e:
+        # Log error but maybe allow queueing if game service is down? 
+        # For strictness, we might want to fail, but for now let's log.
+        # Strict mode:
+        print(f"Failed to check active games: {e}")
+        # return jsonify({'error': 'Failed to verify game status'}), 500
+        pass
+
     # check if user already in queue
     existing = MatchQueue.query.filter_by(user_id=user_id).first()
     if existing:
