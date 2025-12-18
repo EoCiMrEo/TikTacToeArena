@@ -12,6 +12,7 @@ import RankingsLeaderboard from "pages/rankings-leaderboard";
 import VerifyEmail from "pages/verify-email";
 import NotFound from "pages/NotFound";
 import UserProfile from "pages/user-profile";
+import ProtectedRoute from "components/ProtectedRoute";
 
 const Routes = () => {
   return (
@@ -20,15 +21,57 @@ const Routes = () => {
       <ScrollToTop />
       <RouterRoutes>
         {/* Define your routes here */}
-        <Route path="/" element={<GameDashboard />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <GameDashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/user-registration" element={<UserRegistration />} />
         <Route path="/user-login" element={<UserLogin />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/matchmaking-game-lobby" element={<MatchmakingGameLobby />} />
-        <Route path="/game-dashboard" element={<GameDashboard />} />
-        <Route path="/active-game-board" element={<ActiveGameBoard />} />
-        <Route path="/rankings-leaderboard" element={<RankingsLeaderboard />} />
-        <Route path="/user-profile" element={<UserProfile />} />
+        <Route
+          path="/matchmaking-game-lobby"
+          element={
+            <ProtectedRoute>
+              <MatchmakingGameLobby />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game-dashboard"
+          element={
+            <ProtectedRoute>
+              <GameDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/active-game-board"
+          element={
+            <ProtectedRoute>
+              <ActiveGameBoard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rankings-leaderboard"
+          element={
+            <ProtectedRoute>
+              <RankingsLeaderboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/user-profile"
+          element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>
       </ErrorBoundary>
