@@ -7,13 +7,18 @@ const GameLobby = ({
   currentUser,
   opponent,
   gameSettings,
+  isReady,       // Prop from parent
+  opponentReady, // Prop from parent
+  serverCountdown, // Prop from parent
   onReady,
   onCancel,
   onStartGame 
 }) => {
-  const [isReady, setIsReady] = useState(false);
-  const [opponentReady, setOpponentReady] = useState(false);
-  const [countdown, setCountdown] = useState(null);
+  // Local countdown state for smooth decrementing if needed, or just use serverCountdown directly
+  // Using local state initialized by serverCountdown allows smooth seconds decrement even if server updates are sporadic?
+  // But server sends "5" ... wait.
+  // The server sends ONE event: "start_in: 5". The frontend should then count down locally.
+  const [localCountdown, setLocalCountdown] = useState(null);
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
 
@@ -31,34 +36,33 @@ const GameLobby = ({
     setChatMessages(initialMessages);
   }, []);
 
+  // Sync local countdown with server signal
   useEffect(() => {
-    // Simulate opponent readying up after some time
-    const timer = setTimeout(() => {
-      setOpponentReady(true);
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (isReady && opponentReady && countdown === null) {
-      setCountdown(5);
+    if (serverCountdown !== null) {
+        setLocalCountdown(serverCountdown);
+    } else {
+        setLocalCountdown(null);
     }
-  }, [isReady, opponentReady, countdown]);
+  }, [serverCountdown]);
 
+  // Run the countdown locally once started
   useEffect(() => {
-    if (countdown !== null && countdown > 0) {
+    if (localCountdown !== null && localCountdown > 0) {
       const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
+        setLocalCountdown(localCountdown - 1);
       }, 1000);
       return () => clearTimeout(timer);
-    } else if (countdown === 0) {
+    } else if (localCountdown === 0) {
       onStartGame();
     }
-  }, [countdown, onStartGame]);
+  }, [localCountdown, onStartGame]);
 
   const handleReady = () => {
-    setIsReady(!isReady);
+    // Toggle ready state
+    // We optimistically don't update local state here; we wait for parent props to update
+    // But for UI responsiveness we might want to?
+    // Parent handles `onReady(!isReady)`. Parent emits socket. Socket returns `player_ready_update`.
+    // Valid approach: Just call onReady. Let props drive UI.
     onReady(!isReady);
   };
 
@@ -260,7 +264,7 @@ const GameLobby = ({
   );
 
   const renderCountdown = () => {
-    if (countdown === null) return null;
+    if (localCountdown === null) return null;
 
     return (
       <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-200 flex items-center justify-center">
@@ -269,7 +273,7 @@ const GameLobby = ({
             Game Starting In
           </h3>
           <div className="text-6xl font-bold text-primary mb-4 animate-pulse">
-            {countdown}
+            {localCountdown}
           </div>
           <p className="text-text-secondary">
             Get ready to play!
@@ -321,7 +325,7 @@ const GameLobby = ({
           onClick={handleReady}
           iconName={isReady ? "CheckCircle" : "Play"}
           iconPosition="left"
-          disabled={countdown !== null}
+          disabled={localCountdown !== null}
         >
           {isReady ? 'Ready!' : 'Ready Up'}
         </Button>
@@ -333,7 +337,7 @@ const GameLobby = ({
           onClick={onCancel}
           iconName="X"
           iconPosition="left"
-          disabled={countdown !== null}
+          disabled={localCountdown !== null}
         >
           Cancel Match
         </Button>

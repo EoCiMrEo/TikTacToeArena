@@ -81,6 +81,14 @@ class SocketService {
       this.socket.off(event, callback);
     }
   }
+
+  emit(event, data) {
+    if (this.socket) {
+      this.socket.emit(event, data);
+    } else {
+      console.warn("Attempted to emit event without socket connection:", event);
+    }
+  }
 }
 
 const socketService = new SocketService();

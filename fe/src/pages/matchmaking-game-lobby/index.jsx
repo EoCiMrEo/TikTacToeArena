@@ -34,6 +34,12 @@ const MatchmakingGameLobbyPage = () => {
 
   const [opponent, setOpponent] = useState(null);
   const [activeGameSettings, setActiveGameSettings] = useState(null);
+  const [gameId, setGameId] = useState(null);
+  
+  // Ready/Countdown state hoisted from GameLobby
+  const [isReady, setIsReady] = useState(false);
+  const [opponentReady, setOpponentReady] = useState(false);
+  const [countdown, setCountdown] = useState(null);
 
   // Default fallback settings
   const defaultSettings = {
@@ -51,6 +57,12 @@ const MatchmakingGameLobbyPage = () => {
       console.log("Match found!", data);
       // data: { game_id, symbol, opponent_id, game_settings }
       
+      const newGameId = data.game_id;
+      setGameId(newGameId);
+      
+      // Join game room for sync updates
+      socketService.emit('join_game', { game_id: newGameId });
+
       const opponentId = data.opponent_id;
       const mySymbol = data.symbol;
       const serverSettings = data.game_settings;
@@ -65,7 +77,6 @@ const MatchmakingGameLobbyPage = () => {
               eloStakes: serverSettings.eloStakes || 24
           });
       } else {
-          // Fallback if no settings sent (shouldn't happen with new backend)
           setActiveGameSettings({
               ...defaultSettings,
               playerSymbol: mySymbol || 'X'
@@ -103,7 +114,29 @@ const MatchmakingGameLobbyPage = () => {
           }
       }
 
+      // Reset states for new match
+      setIsReady(false);
+      setOpponentReady(false);
+      setCountdown(null);
       setGameState('lobby');
+    };
+
+    const onPlayerReadyUpdate = (data) => {
+        // data: { user_id, ready }
+        if (data.user_id === opponent?.id) {
+            setOpponentReady(data.ready);
+        } else if (data.user_id === currentUser.id) {
+            // Confirm my own ready state from server (optional, but good for sync)
+            setIsReady(data.ready);
+        }
+    };
+
+    const onGameStartCountdown = (data) => {
+        // data: { start_in, game_id }
+        if (data.game_id === gameId) {
+             console.log("Starting countdown:", data.start_in);
+             setCountdown(data.start_in);
+        }
     };
 
     const onOnlineUsersUpdate = (data) => {
@@ -114,12 +147,16 @@ const MatchmakingGameLobbyPage = () => {
 
     socketService.on('match_found', onMatchFound);
     socketService.on('online_users_update', onOnlineUsersUpdate);
+    socketService.on('player_ready_update', onPlayerReadyUpdate);
+    socketService.on('game_start_countdown', onGameStartCountdown);
 
     return () => {
       socketService.off('match_found', onMatchFound);
       socketService.off('online_users_update', onOnlineUsersUpdate);
+      socketService.off('player_ready_update', onPlayerReadyUpdate);
+      socketService.off('game_start_countdown', onGameStartCountdown);
     };
-  }, [user]);
+  }, [user, gameId, opponent]); // Depend on gameId/opponent for socket handlers logic if needed
 
   // Handle auto-match finding simulation/real call
   const handleStartMatchmaking = async (preferences) => {
@@ -152,11 +189,17 @@ const MatchmakingGameLobbyPage = () => {
   const handleCancelMatch = () => {
     setGameState('preferences');
     setMatchmakingPreferences(null);
+    setGameId(null);
+    if (gameId) {
+        socketService.emit('leave_game', { game_id: gameId });
+    }
   };
 
   const handleReady = (ready) => {
-    // Handle ready state change
-    console.log('Player ready:', ready);
+    // Emit ready state to server
+    if (gameId) {
+        socketService.emit('player_ready', { game_id: gameId, ready: ready });
+    }
   };
 
   const handleStartGame = () => {
@@ -195,6 +238,10 @@ const MatchmakingGameLobbyPage = () => {
             currentUser={currentUser}
             opponent={opponent}
             gameSettings={activeGameSettings || gameSettings}
+            // Pass synced state
+            isReady={isReady}
+            opponentReady={opponentReady}
+            serverCountdown={countdown}
             onReady={handleReady}
             onCancel={handleCancelMatch}
             onStartGame={handleStartGame}
@@ -211,7 +258,7 @@ const MatchmakingGameLobbyPage = () => {
       {/* Header */}
       <GameContextHeader
         gameState={gameState === 'lobby' ? 'waiting' : 'idle'}
-        opponent={gameState === 'lobby' ? opponent : null}
+        opponent={null}
         onMenuToggle={handleMenuToggle}
         title="TicTacToe Arena"
       />

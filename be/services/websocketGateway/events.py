@@ -85,3 +85,55 @@ def register_events(socketio):
             leave_room(f"game_{game_id}")
             logger.info(f"Client left game room: game_{game_id}")
             emit('left_game', {'game_id': game_id})
+
+    @socketio.on('player_ready')
+    def on_player_ready(data):
+        """
+        Handle player ready status.
+        data: { 'game_id': str, 'ready': bool }
+        """
+        user_id = session.get('user_id')
+        if not user_id:
+            return
+
+        game_id = data.get('game_id')
+        ready_status = data.get('ready', False)
+
+        if not game_id:
+            return
+
+        room_name = f"game_{game_id}"
+        
+        # 1. Broadcast ready status to room (so opponent sees it)
+        # Note: 'include_self=False' if we want strictly opponent, but 'broadcast=True' in room hits everyone.
+        # It's better to let everyone know so UI stays in sync.
+        emit('player_ready_update', {
+            'user_id': user_id,
+            'ready': ready_status
+        }, room=room_name)
+
+        logger.info(f"Player {user_id} is ready: {ready_status} in game {game_id}")
+
+        # 2. Track readiness in Redis to sync start
+        redis_key = f"game:{game_id}:ready_players"
+        
+        if ready_status:
+            redis_client.sadd(redis_key, user_id)
+            # Set expiry for safety (e.g., 1 hour)
+            redis_client.expire(redis_key, 3600)
+        else:
+            redis_client.srem(redis_key, user_id)
+
+        # 3. Check if both players are ready
+        ready_count = redis_client.scard(redis_key)
+        
+        # Assuming 2 players for TicTacToe
+        if ready_count >= 2:
+            logger.info(f"Both players ready for game {game_id}. Starting countdown.")
+            emit('game_start_countdown', {
+                'start_in': 5, # 3 seconds countdown
+                'game_id': game_id
+            }, room=room_name)
+            
+            # Optionally clear the ready key or keep it
+            redis_client.delete(redis_key)
