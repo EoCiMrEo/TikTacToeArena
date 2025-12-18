@@ -74,7 +74,10 @@ const gameService = {
       const MATCHMAKING_URL = import.meta.env.VITE_MATCHMAKING_SERVICE_URL || 'http://localhost:5003';
       const response = await axios.post(`${MATCHMAKING_URL}/queue/join`, {
         user_id: userId,
-        elo: preferences.elo || 1000 // Default or from profile
+        elo: preferences.elo || 1000,
+        game_speed: preferences.gameSpeed || 'standard',
+        min_elo: preferences.skillRange ? preferences.skillRange[0] : 0,
+        max_elo: preferences.skillRange ? preferences.skillRange[1] : 3000
       });
       return { success: true, data: response.data };
     } catch (error) {

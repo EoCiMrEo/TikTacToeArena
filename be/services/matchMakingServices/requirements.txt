@@ -7,3 +7,4 @@ pyjwt
 python-dotenv
 gevent
 flask-cors
+Flask-Migrate

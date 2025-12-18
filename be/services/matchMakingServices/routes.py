@@ -9,6 +9,9 @@ def join_queue():
     data = request.json
     user_id = data.get('user_id')
     elo = data.get('elo')
+    game_speed = data.get('game_speed', 'standard')
+    min_elo = data.get('min_elo', 0)
+    max_elo = data.get('max_elo', 3000)
 
     if not user_id or elo is None:
         return jsonify({'error': 'Missing user_id or elo'}), 400
@@ -17,9 +20,18 @@ def join_queue():
     existing = MatchQueue.query.filter_by(user_id=user_id).first()
     if existing:
          existing.elo = elo # Update elo if changed
+         existing.game_speed = game_speed
+         existing.min_elo = min_elo
+         existing.max_elo = max_elo
          existing.joined_at = db.func.now() # Refresh timestamp
     else:
-        new_entry = MatchQueue(user_id=user_id, elo=elo)
+        new_entry = MatchQueue(
+            user_id=user_id, 
+            elo=elo,
+            game_speed=game_speed,
+            min_elo=min_elo,
+            max_elo=max_elo
+        )
         db.session.add(new_entry)
     
     try:

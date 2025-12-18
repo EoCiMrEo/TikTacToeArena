@@ -6,6 +6,7 @@ import MatchmakingPreferences from './components/MatchmakingPreferences';
 import SearchingState from './components/SearchingState';
 import socketService from '../../utils/socketService';
 import gameService from '../../utils/gameService';
+import userProfileService from '../../utils/userProfileService';
 import { useAuth } from '../../contexts/AuthContext';
 import GameLobby from './components/GameLobby';
 
@@ -19,31 +20,23 @@ const MatchmakingGameLobbyPage = () => {
 
   const { user, userProfile } = useAuth();
   
-  // Use real user data if available, fallback to mock for now if context is missing (though it shouldn't be)
+  // Use real user data if available
   const currentUser = {
-    id: user?.id || 1,
-    username: userProfile?.username || "GameMaster2024",
+    id: user?.id,
+    username: userProfile?.username || user?.email?.split('@')[0] || "Player",
     avatar: userProfile?.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&crop=face",
-    elo: userProfile?.elo_rating || 1456,
+    elo: userProfile?.elo_rating || 1200,
     wins: userProfile?.wins || 0,
     losses: userProfile?.losses || 0,
     status: 'online',
-    gameCode: 'GM2024'
+    gameCode: userProfile?.game_code || 'PLAYER'
   };
 
-  // Mock opponent data
-  const mockOpponent = {
-    id: 2,
-    username: "TicTacPro",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-    elo: 1523,
-    wins: 203,
-    losses: 156,
-    status: 'online'
-  };
+  const [opponent, setOpponent] = useState(null);
+  const [activeGameSettings, setActiveGameSettings] = useState(null);
 
-  // Mock game settings
-  const gameSettings = {
+  // Default fallback settings
+  const defaultSettings = {
     speed: 'standard',
     timePerMove: '2 minutes',
     playerSymbol: 'X',
@@ -54,24 +47,63 @@ const MatchmakingGameLobbyPage = () => {
     // Connect to socket on mount
     const socket = socketService.connect(user?.access_token); // Pass token if needed
 
-    const onMatchFound = (data) => {
+    const onMatchFound = async (data) => {
       console.log("Match found!", data);
-      // data: { game_id, symbol, opponent_id }
-      // In a real app, we'd fetch opponent details here or pass them in the event
-      // For now, let's just transition to lobby and set game details
+      // data: { game_id, symbol, opponent_id, game_settings }
       
-      // Mocking opponent details since backend might just send ID
-      // You might want to fetch profile by ID in a real scenario
       const opponentId = data.opponent_id;
+      const mySymbol = data.symbol;
+      const serverSettings = data.game_settings;
+
+      // Update settings from server if available
+      if (serverSettings) {
+          setActiveGameSettings({
+              ...defaultSettings,
+              speed: serverSettings.speed,
+              timePerMove: serverSettings.timePerMove,
+              playerSymbol: mySymbol, // My symbol
+              eloStakes: serverSettings.eloStakes || 24
+          });
+      } else {
+          // Fallback if no settings sent (shouldn't happen with new backend)
+          setActiveGameSettings({
+              ...defaultSettings,
+              playerSymbol: mySymbol || 'X'
+          });
+      }
       
+      if (opponentId) {
+          try {
+              const { success, data: profileData, error } = await userProfileService.getProfile(opponentId);
+              if (success) {
+                   const opponentData = {
+                       id: profileData.id,
+                       username: profileData.username || "Opponent",
+                       avatar: profileData.avatar_url || "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+                       elo: profileData.elo_rating || 1200,
+                       wins: profileData.wins || 0,
+                       losses: profileData.losses || 0,
+                       status: 'online'
+                   };
+                   setOpponent(opponentData);
+              } else {
+                  console.error("Failed to fetch opponent profile:", error);
+                  setOpponent({
+                      id: opponentId,
+                      username: "Opponent",
+                      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+                      elo: 1200,
+                      wins: 0,
+                      losses: 0,
+                      status: 'online'
+                  });
+              }
+          } catch (err) {
+              console.error("Error fetching opponent:", err);
+          }
+      }
+
       setGameState('lobby');
-      // Navigate to active game or show lobby?
-      // Design says Lobby first (Ready handling), but Active Game Board is also an option.
-      // Let's go to Lobby/Ready check first as per UI.
-      
-      // We need to store the gameId somewhere, maybe in navigation state or context
-      // For now, let's just navigate directly to active game if "Lobby" is just a visual transition
-      // But the UI shows a "Ready" screen.
     };
 
     const onOnlineUsersUpdate = (data) => {
@@ -161,8 +193,8 @@ const MatchmakingGameLobbyPage = () => {
         return (
           <GameLobby
             currentUser={currentUser}
-            opponent={mockOpponent}
-            gameSettings={gameSettings}
+            opponent={opponent}
+            gameSettings={activeGameSettings || gameSettings}
             onReady={handleReady}
             onCancel={handleCancelMatch}
             onStartGame={handleStartGame}
@@ -179,7 +211,7 @@ const MatchmakingGameLobbyPage = () => {
       {/* Header */}
       <GameContextHeader
         gameState={gameState === 'lobby' ? 'waiting' : 'idle'}
-        opponent={gameState === 'lobby' ? mockOpponent : null}
+        opponent={gameState === 'lobby' ? opponent : null}
         onMenuToggle={handleMenuToggle}
         title="TicTacToe Arena"
       />

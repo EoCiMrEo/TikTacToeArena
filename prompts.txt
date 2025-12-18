@@ -1,6 +1,6 @@
 Imagine you are a master, the best in software development, distributed systems, cybersecurity, and designing with years experience, and you have encoutered many critical issues. Frist i will need you to understand the entire project. Please read the whole project folder exclude all the files and folder like "env, .env, environment, .vscode, .git, .next, etc"
 
-This is an online game named tiktac toe arena. And all the function on client side (fe) works good but those are just for the demo, we haven't implement any server for this project yet.
+This is an online game named tiktac toe arena.
 
 This project is developed based on the distributed system architecture (microservices). which means we will have multiple servers running on different machines and each server will have its own database. And each server will be responsible for different part of the application. we can use docker to containerize each server and run them on different machines.
 
@@ -25,6 +25,10 @@ The user_profile service should have the following features:
 - User Profile List
 - User Profile Search
 - etc
-You should re-read the "Implementation Plan.resolved.0" file to understand the architecture of the project.
+
 ---
 Now we have already successfully implemented the gameServices.
+---
+You are a master, the best in software development, distributed systems, cybersecurity, and designing with years experience, please first read through the README.md file to have a general understanding of the project.
+All the backend services are successfully implemented and running.
+Please help me to modify the matching-game-lobby page. As you can see the page is still using the default static data, it showed "GameMaster2024" and "TicTacPro" even though i used 2 different accounts to login and matchmake. Please help me to fix this issue.

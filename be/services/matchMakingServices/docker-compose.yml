@@ -1,5 +1,6 @@
 services:
   matchmaking_service:
+    container_name: matchmaking_service
     build: .
     ports:
       - "5003:5003"
@@ -16,6 +17,7 @@ services:
       - matchmaking_redis
 
   matchmaking_db:
+    container_name: matchmaking_db
     image: postgres:15-alpine
     environment:
       - POSTGRES_USER=mm_user
@@ -27,6 +29,7 @@ services:
       - mm_pg_data:/var/lib/postgresql/data
 
   matchmaking_redis:
+    container_name: matchmaking_redis
     image: redis:7-alpine
     ports:
       - "6381:6379"

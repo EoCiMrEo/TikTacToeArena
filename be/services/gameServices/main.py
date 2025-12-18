@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from config import Config
 from extensions import db
@@ -17,8 +18,11 @@ def create_app(config_class=Config):
     # Setup Logging
     logging.basicConfig(level=logging.INFO)
 
+    # CORS configuration with credentials support
+    # Required because frontend uses withCredentials: true
     from flask_cors import CORS
-    CORS(app)
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:4028')
+    CORS(app, resources={r"/*": {"origins": frontend_url}}, supports_credentials=True)
 
     return app
 
