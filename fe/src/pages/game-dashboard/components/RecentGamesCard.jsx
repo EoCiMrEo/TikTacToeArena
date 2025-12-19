@@ -135,7 +135,7 @@ const RecentGamesCard = ({ recentGames }) => {
         <Button 
           variant="ghost" 
           fullWidth 
-          onClick={() => navigate('/user-profile')}
+          onClick={() => navigate('/game-history')}
           className="text-sm"
         >
           View All History

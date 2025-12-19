@@ -49,15 +49,36 @@ const ActiveGameBoard = () => {
   const [showMoveHistory, setShowMoveHistory] = useState(false);
 
   // Connection State
-  const [isConnected, setIsConnected] = useState(true);
+  const [isConnected, setIsConnected] = useState(socketService.isConnected);
   const [latency, setLatency] = useState(45);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
+
+  useEffect(() => {
+      const onConnect = () => setIsConnected(true);
+      const onDisconnect = () => setIsConnected(false);
+      
+      socketService.on('connect', onConnect);
+      socketService.on('disconnect', onDisconnect);
+      
+      // Initial check
+      setIsConnected(socketService.isConnected);
+      
+      return () => {
+          socketService.off('connect', onConnect);
+          socketService.off('disconnect', onDisconnect);
+      };
+  }, []);
 
   // Chat - Mock for now
   const [chatMessages, setChatMessages] = useState([]);
 
   // Initial Fetch
   useEffect(() => {
+      // Ensure socket is connected
+      if (user?.access_token) {
+          socketService.connect(user.access_token);
+      }
+
       const fetchGame = async () => {
           if (!gameId) return;
           const res = await gameService.getGame(gameId);
@@ -114,7 +135,9 @@ const ActiveGameBoard = () => {
            // Update turn info
           const currentTurn = data.current_player_id === user.id;
           setIsMyTurn(currentTurn);
+          setIsMyTurn(currentTurn);
           setCurrentPlayer(data.current_player_id === data.player1_id ? 'X' : 'O');
+          setTimeRemaining(30); // Reset timer on move
           
           if (data.status === 'completed') {
              // Handle completion via game_over event primarily, but this is a backup
@@ -148,7 +171,39 @@ const ActiveGameBoard = () => {
           socketService.off('game_update', onGameUpdate);
           socketService.off('game_over', onGameOver);
       };
-  }, [gameId, user.id]);
+  }, [gameId, user.id, isConnected]); // Add isConnected dependency to retry join if connection happens late
+
+  // Timer Logic
+  useEffect(() => {
+    let interval;
+    if (gameStatus === 'active' && timeRemaining > 0) {
+      interval = setInterval(() => {
+        setTimeRemaining(prev => {
+           if (prev <= 1) return 0;
+           return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [gameStatus, timeRemaining]); // Depend on timeRemaining to ensure clean intervals, or just gameStatus?
+  // Better dependency: [gameStatus] and check inside.
+  // Actually, standard countdown pattern:
+  // useEffect(() => {
+  //   if (status !== active) return;
+  //   const timer = setInterval(...)
+  //   return () => clearInterval(timer);
+  // }, [status]);
+
+  // Reset timer on turn change?
+  // The backend store 'updated_at' which resets on move.
+  // When we receive 'game_update', we should reset the timer to 30!
+  
+  useEffect(() => {
+       // Reset timer when turn changes (or rather, when board/player changes)
+       // We can detect this via 'currentPlayer' change or just 'game_update' event handling.
+       // Handled in onGameUpdate below (I should add it there).
+  }, [currentPlayer]); // ...
+
 
 
   const handleCellClick = async (index) => {

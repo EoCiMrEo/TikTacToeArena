@@ -18,6 +18,7 @@ class Config:
     SUPABASE_KEY = os.getenv('SUPABASE_KEY')
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6383/0')
     EVENT_BUS_REDIS_URL = os.getenv('EVENT_BUS_REDIS_URL', 'redis://localhost:6382/0')
+    INTERNAL_API_KEY = os.getenv('INTERNAL_API_KEY', 'dev_internal_key')
 
 class DevelopmentConfig(Config):
     DEBUG = True

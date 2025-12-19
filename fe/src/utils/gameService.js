@@ -31,9 +31,9 @@ const gameService = {
     }
   },
 
-  getRecentGames: async (userId) => {
+  getRecentGames: async (userId, limit = 5, offset = 0) => {
     try {
-      const response = await gameClient.get(`/recent/${userId}`);
+      const response = await gameClient.get(`/recent/${userId}?limit=${limit}&offset=${offset}`);
       return { success: true, data: response.data };
     } catch (error) {
       console.error('getRecentGames error:', error);

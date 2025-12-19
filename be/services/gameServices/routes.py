@@ -30,6 +30,23 @@ def publish_game_update(game_id, event_type, data):
     except Exception as e:
         current_app.logger.error(f"Failed to publish game update: {e}")
 
+def publish_user_update(user_id, event_type, data):
+    """
+    Publish event to specific user's room via Redis Pub/Sub.
+    Target room: user_id (as handled in WebSocket Gateway)
+    """
+    try:
+        r = get_event_bus_client()
+        message = {
+            'event': event_type,
+            'data': data,
+            'room': str(user_id)  # Publish to user's personal room
+        }
+        # Publish to 'game_updates' channel which Gateway listens to
+        r.publish('game_updates', json.dumps(message))
+    except Exception as e:
+        current_app.logger.error(f"Failed to publish user update: {e}")
+
 @game_bp.route('/games', methods=['POST'])
 def create_new_game():
     data = request.json
@@ -56,6 +73,10 @@ def create_new_game():
     # 3. Notify
     if player2_id:
         publish_game_update(game_id, 'game_start', redis_state)
+        
+        # Notify both users to update their dashboard (active games list changed)
+        publish_user_update(player1_id, 'dashboard_update', {'type': 'game_started', 'game_id': game_id})
+        publish_user_update(player2_id, 'dashboard_update', {'type': 'game_started', 'game_id': game_id})
 
     return jsonify(new_game.to_dict()), 201
 
@@ -106,8 +127,50 @@ def make_move(game_id):
             db.session.commit()
             
             publish_game_update(game_id, 'game_over', new_state)
+            
+            # Update User Stats (ELO, Wins, Losses)
+            player1_outcome = 'draw'
+            player2_outcome = 'draw'
+            player1_elo_change = 0
+            player2_elo_change = 0
+            
+            if winner_id:
+                if str(game.player1_id) == winner_id:
+                    player1_outcome = 'win'
+                    player2_outcome = 'loss'
+                    player1_elo_change = 15
+                    player2_elo_change = -10
+                else:
+                    player1_outcome = 'loss'
+                    player2_outcome = 'win'
+                    player1_elo_change = -10
+                    player2_elo_change = 15
+            
+            # Helper to call Profile Service
+            update_user_stats(str(game.player1_id), player1_elo_change, player1_outcome)
+            if game.player2_id:
+                 update_user_stats(str(game.player2_id), player2_elo_change, player2_outcome)
+
+            # Notify both users to update their dashboard
+            publish_user_update(str(game.player1_id), 'dashboard_update', {'type': 'game_ended', 'game_id': game_id})
+            if game.player2_id:
+                publish_user_update(str(game.player2_id), 'dashboard_update', {'type': 'game_ended', 'game_id': game_id})
 
     return jsonify(new_state)
+
+def update_user_stats(user_id, elo_change, outcome):
+    import requests
+    url = f"{current_app.config['USER_PROFILE_SERVICE_URL']}/internal/elo"
+    headers = {'X-Internal-API-Key': current_app.config['INTERNAL_API_KEY'], 'Content-Type': 'application/json'}
+    data = {
+        'user_id': user_id,
+        'elo_change': elo_change,
+        'outcome': outcome
+    }
+    try:
+        requests.put(url, json=data, headers=headers, timeout=5)
+    except Exception as e:
+        current_app.logger.error(f"Failed to update stats for {user_id}: {e}")
 
 
 @game_bp.route('/games/active/<user_id>', methods=['GET'])
@@ -127,10 +190,12 @@ def get_recent_games(user_id):
     try:
         uid = uuid.UUID(user_id)
         limit = request.args.get('limit', 5, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        
         games = Game.query.filter(
             ((Game.player1_id == uid) | (Game.player2_id == uid)),
             Game.status == 'completed'
-        ).order_by(Game.finished_at.desc()).limit(limit).all()
+        ).order_by(Game.finished_at.desc()).offset(offset).limit(limit).all()
         return jsonify([g.to_dict() for g in games]), 200
     except ValueError:
         return jsonify({'error': 'Invalid user_id'}), 400

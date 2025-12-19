@@ -204,7 +204,7 @@ const MatchmakingGameLobbyPage = () => {
 
   const handleStartGame = () => {
     // Navigate to active game board
-    navigate('/active-game-board');
+    navigate(`/active-game-board/${gameId}`);
   };
 
   const handleMenuToggle = () => {

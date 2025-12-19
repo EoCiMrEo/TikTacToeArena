@@ -13,6 +13,7 @@ import VerifyEmail from "pages/verify-email";
 import NotFound from "pages/NotFound";
 import UserProfile from "pages/user-profile";
 import ProtectedRoute from "components/ProtectedRoute";
+import GameHistory from "pages/game-history";
 
 const Routes = () => {
   return (
@@ -49,7 +50,7 @@ const Routes = () => {
           }
         />
         <Route
-          path="/active-game-board"
+          path="/active-game-board/:gameId"
           element={
             <ProtectedRoute>
               <ActiveGameBoard />
@@ -69,6 +70,14 @@ const Routes = () => {
           element={
             <ProtectedRoute>
               <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/game-history"
+          element={
+            <ProtectedRoute>
+              <GameHistory />
             </ProtectedRoute>
           }
         />

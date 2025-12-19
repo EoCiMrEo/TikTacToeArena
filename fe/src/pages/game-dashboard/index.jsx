@@ -12,6 +12,8 @@ import RecentGamesCard from './components/RecentGamesCard';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 
+import socketService from '../../utils/socketService';
+
 const GameDashboard = () => {
   const navigate = useNavigate();
   const { user, userProfile } = useAuth();
@@ -29,86 +31,171 @@ const GameDashboard = () => {
     bestStreak: 0
   });
 
-  const fetchData = async () => {
+  const fetchOpponentProfiles = async (games) => {
+      const gamesWithProfiles = await Promise.all(games.map(async (game) => {
+          // If name is present (from backend join), use it. otherwise fetch.
+          // Currently backend might not return name.
+          if (!game.opponent.name || game.opponent.name === "Unknown Opponent") {
+             const opponentId = game.current_player_id === user.id ? 
+                 (game.player1_id === user.id ? game.player2_id : game.player1_id) : 
+                 (game.player1_id === user.id ? game.player2_id : game.player1_id); 
+             
+             // Quick fix logic: identifying opponent ID can be tricky if not explicit in game object
+             // Let's assume game object has opponent_id or we derive it:
+             let targetId = null;
+             if(game.player1_id && game.player1_id !== user.id) targetId = game.player1_id;
+             if(game.player2_id && game.player2_id !== user.id) targetId = game.player2_id;
+
+             if (targetId) {
+                 const profileRes = await userProfileService.getProfile(targetId);
+                 if (profileRes.success) {
+                     return {
+                         ...game,
+                         opponent: {
+                             ...game.opponent,
+                             name: profileRes.data.username || "Player",
+                             avatar: profileRes.data.avatar_url || game.opponent.avatar,
+                             elo: profileRes.data.elo_rating || game.opponent.elo
+                         }
+                     };
+                 }
+             }
+          }
+          return game;
+      }));
+      return gamesWithProfiles;
+  };
+
+  const fetchData = async (silent = false) => {
     if (!user) return;
     
     try {
-      setIsRefreshing(true);
+      if (!silent) setIsRefreshing(true);
       
       // Fetch Active Games
       const activeRes = await gameService.getActiveGames(user.id);
       if (activeRes.success) {
-        // Transform DB data to UI format
-        const formattedActive = activeRes.data.map(game => ({
-          id: game.id,
-          opponent: {
-            name: game.opponent_name || "Unknown Opponent", // Backend might need to join/fetch opponent name. For now placeholders if not in DB response
-            avatar: "https://via.placeholder.com/150", 
-            elo: game.opponent_elo || 1000
-          },
-          status: game.current_player_id === user.id ? "your-turn" : "opponent-turn",
-          lastMove: new Date(game.updated_at || game.started_at),
-          eloStakes: 15 // Placeholder or calc
-        }));
+        let formattedActive = activeRes.data.map(game => {
+             // Basic formatting first
+             const isPlayer1 = game.player1_id === user.id;
+             // Determine opponent ID locally if needed for fetchOpponentProfiles
+             return {
+              ...game,
+              id: game.id,
+              opponent: {
+                name: "Unknown Opponent", 
+                avatar: "https://via.placeholder.com/150", 
+                elo: 1000
+              },
+              status: game.current_player_id === user.id ? "your-turn" : "opponent-turn",
+              lastMove: new Date(game.updated_at || game.started_at),
+              eloStakes: 15
+            };
+        });
+
+        // Fetch names
+        formattedActive = await fetchOpponentProfiles(formattedActive);
         setActiveGames(formattedActive);
       }
 
-      // Fetch Recent Games
-      const recentRes = await gameService.getRecentGames(user.id);
+      // Fetch Recent Games (Limit 5 for dashboard)
+      const recentRes = await gameService.getRecentGames(user.id, 5);
       if (recentRes.success) {
-         const formattedRecent = recentRes.data.map(game => ({
-          id: game.id,
-          opponent: {
-            name: "Opponent", // need extra fetch or join
-            avatar: "https://via.placeholder.com/150"
-          },
-          result: game.winner_id === user.id ? "win" : (game.winner_id ? "loss" : "draw"),
-          eloChange: game.winner_id === user.id ? 15 : -10, // Placeholder
-          completedAt: new Date(game.finished_at)
+         // Similar fetching could be done here if recent games also miss names, 
+         // but recent games usuall store snapshot. For now assuming similar logic or keeping simple.
+         const formattedRecent = await Promise.all(recentRes.data.map(async (game) => {
+             let opponentName = "Opponent";
+             let opponentId = game.player1_id === user.id ? game.player2_id : game.player1_id;
+             if (opponentId) {
+                 // Optional: cache this or only fetch if needed. 
+                 // For dashboard calling it 5 times is okay-ish.
+                 const p = await userProfileService.getProfile(opponentId);
+                 if (p.success) opponentName = p.data.username;
+             }
+
+             return {
+                id: game.id,
+                opponent: {
+                    name: opponentName,
+                    avatar: "https://via.placeholder.com/150"
+                },
+                result: game.winner_id === user.id ? "win" : (game.winner_id ? "loss" : "draw"),
+                eloChange: game.winner_id === user.id ? 15 : -10,
+                completedAt: new Date(game.finished_at)
+            };
         }));
         setRecentGames(formattedRecent);
       }
 
-      // Refresh Stats (if profile outdated)
-      if (userProfile) {
-        setStatsData({
+      // Refresh Stats & Profile Data
+      let freshStats = null;
+      
+      // Always fetch fresh stats to get real-time ELO/Rank updates
+      const statsRes = await userProfileService.getPlayerStats(user.id);
+      if (statsRes.success) {
+           freshStats = statsRes.data;
+           setStatsData({
+              wins: statsRes.data.games_won || 0,
+              losses: statsRes.data.games_lost || 0,
+              totalGames: statsRes.data.games_played || 0,
+              currentStreak: statsRes.data.win_streak || 0,
+              bestStreak: statsRes.data.best_win_streak || 0
+          });
+      } else if (userProfile) {
+          // Fallback to context if fetch fails
+          setStatsData({
             wins: userProfile.games_won || 0,
             losses: userProfile.games_lost || 0,
             totalGames: userProfile.games_played || 0,
             currentStreak: userProfile.win_streak || 0,
             bestStreak: userProfile.best_win_streak || 0
         });
-      } else {
-        // Fetch explicit stats if userProfile context is missing specific fields
-        const statsRes = await userProfileService.getPlayerStats(user.id);
-        if (statsRes.success) {
-             setStatsData({
-                wins: statsRes.data.games_won || 0,
-                losses: statsRes.data.games_lost || 0,
-                totalGames: statsRes.data.games_played || 0,
-                currentStreak: statsRes.data.win_streak || 0,
-                bestStreak: statsRes.data.best_win_streak || 0
-            });
-        }
       }
       
       setLastUpdated(new Date());
+      return freshStats; // Return for use in displayUser update
     } catch (e) {
       console.error("Dashboard refresh failed", e);
     } finally {
-      setIsRefreshing(false);
+      if (!silent) setIsRefreshing(false);
     }
   };
 
+  // Local state for user display to allow overrides from fresh fetch
+  const [displayData, setDisplayData] = useState(null);
+
   useEffect(() => {
-    fetchData();
-    // Poll for updates every 30s
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, [user, userProfile]); // Re-run when user or profile changes
+    // Initial fetch
+    fetchData().then(stats => {
+        if(stats) setDisplayData(stats);
+    });
+
+    // Setup Socket Listeners
+    const socket = socketService.connect(user.access_token);
+    
+    if (socket) {
+        socket.on('dashboard_update', (data) => {
+            console.log("Received dashboard update:", data);
+            fetchData(true).then(stats => {
+                 if(stats) setDisplayData(stats);
+            });
+        });
+
+        socket.on('connect', () => setConnectionStatus('connected'));
+        socket.on('disconnect', () => setConnectionStatus('reconnecting'));
+    }
+
+    return () => {
+        if (socket) {
+            socket.off('dashboard_update');
+        }
+    };
+  }, [user, userProfile]);
 
   const handleRefresh = () => {
-    fetchData();
+    fetchData().then(stats => {
+        if(stats) setDisplayData(stats);
+    });
   };
 
   const handleJoinGame = (gameId) => {
@@ -119,14 +206,14 @@ const GameDashboard = () => {
     navigate('/user-profile');
   };
   
-  // Transform userProfile for WelcomeCard
+  // Transform data for WelcomeCard: Use fresh displayData if available, else fallback to context
   const displayUser = {
     id: user?.id,
-    username: userProfile?.username || user?.email?.split('@')[0] || "Player",
-    avatar: userProfile?.avatar_url || "https://via.placeholder.com/150",
-    elo: userProfile?.elo_rating || 1000,
-    rank: userProfile?.current_rank === 'Unranked' ? 'Unranked' : `#${userProfile?.current_rank || '-'}`,
-    eloChange: 0, // Placeholder
+    username: displayData?.username || userProfile?.username || user?.email?.split('@')[0] || "Player",
+    avatar: displayData?.avatar_url || userProfile?.avatar_url || "https://via.placeholder.com/150",
+    elo: displayData?.elo_rating || userProfile?.elo_rating || 1000,
+    rank: (displayData?.current_rank || userProfile?.current_rank) === 'Unranked' ? 'Unranked' : `#${displayData?.current_rank || userProfile?.current_rank || '-'}`,
+    eloChange: 0,
     status: 'online'
   };
 
