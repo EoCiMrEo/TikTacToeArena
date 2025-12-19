@@ -210,6 +210,13 @@ export function AuthProvider({ children }) {
     signOut,
     updateProfile,
     resetPassword,
+    refreshProfile: async () => {
+        if (user?.id) {
+            const { data } = await userProfileService.getProfile(user.id);
+            if (data) setUserProfile(data);
+             // Also refresh user object if needed (usually profile is enough for stats)
+        }
+    },
     clearError: () => setAuthError(null),
   };
 

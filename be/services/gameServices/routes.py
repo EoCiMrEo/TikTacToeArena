@@ -52,6 +52,7 @@ def create_new_game():
     data = request.json
     player1_id = data.get('player1_id')
     player2_id = data.get('player2_id') # Optional, if matchmaking or invite
+    settings = data.get('settings', {}) # Extract settings
     
     if not player1_id:
         return jsonify({'error': 'player1_id required'}), 400
@@ -68,7 +69,7 @@ def create_new_game():
     
     # 2. Initialize Redis State
     game_id = str(new_game.id)
-    redis_state = create_game(game_id, player1_id, player2_id)
+    redis_state = create_game(game_id, player1_id, player2_id, settings)
     
     # 3. Notify
     if player2_id:
@@ -146,10 +147,26 @@ def make_move(game_id):
                     player1_elo_change = -10
                     player2_elo_change = 15
             
-            # Helper to call Profile Service
-            update_user_stats(str(game.player1_id), player1_elo_change, player1_outcome)
-            if game.player2_id:
-                 update_user_stats(str(game.player2_id), player2_elo_change, player2_outcome)
+            # Publish Domain Event for Stats Sync
+            try:
+                r = get_event_bus_client()
+                domain_event = {
+                    'event_type': 'GAME_COMPLETED',
+                    'payload': {
+                        'game_id': game_id,
+                        'finished_at': game.finished_at.isoformat(),
+                        'player1_id': str(game.player1_id),
+                        'player1_outcome': player1_outcome,
+                        'player1_elo_change': player1_elo_change,
+                        'player2_id': str(game.player2_id) if game.player2_id else None,
+                        'player2_outcome': player2_outcome,
+                        'player2_elo_change': player2_elo_change
+                    }
+                }
+                r.publish('domain_events', json.dumps(domain_event))
+                current_app.logger.info(f"Published GAME_COMPLETED event for {game_id}")
+            except Exception as e:
+                current_app.logger.error(f"Failed to publish domain event: {e}")
 
             # Notify both users to update their dashboard
             publish_user_update(str(game.player1_id), 'dashboard_update', {'type': 'game_ended', 'game_id': game_id})
@@ -158,19 +175,7 @@ def make_move(game_id):
 
     return jsonify(new_state)
 
-def update_user_stats(user_id, elo_change, outcome):
-    import requests
-    url = f"{current_app.config['USER_PROFILE_SERVICE_URL']}/internal/elo"
-    headers = {'X-Internal-API-Key': current_app.config['INTERNAL_API_KEY'], 'Content-Type': 'application/json'}
-    data = {
-        'user_id': user_id,
-        'elo_change': elo_change,
-        'outcome': outcome
-    }
-    try:
-        requests.put(url, json=data, headers=headers, timeout=5)
-    except Exception as e:
-        current_app.logger.error(f"Failed to update stats for {user_id}: {e}")
+
 
 
 @game_bp.route('/games/active/<user_id>', methods=['GET'])

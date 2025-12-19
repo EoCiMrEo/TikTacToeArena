@@ -12,6 +12,7 @@ services:
       - SUPABASE_KEY=${SUPABASE_KEY}
       - REDIS_URL=redis://tictactoe-userprofile_redis:6379/0
       - EVENT_BUS_REDIS_URL=redis://host.docker.internal:6382/0
+      - GAME_DB_URL=postgresql://game_user:game_pass@host.docker.internal:5434/game_db
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

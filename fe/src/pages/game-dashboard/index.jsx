@@ -181,6 +181,13 @@ const GameDashboard = () => {
             });
         });
 
+        socket.on('profile_updated', (data) => {
+             console.log("Received profile update:", data);
+             fetchData(true).then(stats => {
+                  if(stats) setDisplayData(stats);
+             });
+        });
+
         socket.on('connect', () => setConnectionStatus('connected'));
         socket.on('disconnect', () => setConnectionStatus('reconnecting'));
     }

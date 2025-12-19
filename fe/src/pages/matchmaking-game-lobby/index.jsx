@@ -160,11 +160,17 @@ const MatchmakingGameLobbyPage = () => {
 
   // Handle auto-match finding simulation/real call
   const handleStartMatchmaking = async (preferences) => {
-    setMatchmakingPreferences(preferences);
+    // Inject current user ELO into preferences for service call
+    const finalPreferences = {
+        ...preferences,
+        elo: currentUser.elo
+    };
+    
+    setMatchmakingPreferences(finalPreferences);
     setGameState('searching');
     
     // Call backend to join queue
-    const res = await gameService.joinMatchmaking(currentUser.id, preferences);
+    const res = await gameService.joinMatchmaking(currentUser.id, finalPreferences);
     if (!res.success) {
         console.error("Failed to join queue", res.error);
         setGameState('preferences');

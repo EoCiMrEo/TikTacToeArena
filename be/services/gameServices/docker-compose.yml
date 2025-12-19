@@ -9,6 +9,7 @@ services:
       - REDIS_URL=redis://game_redis:6379/0
       - WS_GATEWAY_URL=http://websocket_gateway:5005
       - EVENT_BUS_REDIS_URL=redis://host.docker.internal:6382/0
+      - USER_PROFILE_SERVICE_URL=http://host.docker.internal:5000
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

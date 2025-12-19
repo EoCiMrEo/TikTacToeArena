@@ -32,3 +32,17 @@ Now we have already successfully implemented the gameServices.
 You are a master, the best in software development, distributed systems, cybersecurity, and designing with years experience, please first read through the README.md file to have a general understanding of the project.
 All the backend services are successfully implemented and running.
 Please help me to modify the matching-game-lobby page. As you can see the page is still using the default static data, it showed "GameMaster2024" and "TicTacPro" even though i used 2 different accounts to login and matchmake. Please help me to fix this issue.
+---
+You are a master, the best in software development, distributed systems, cybersecurity, and designing with years experience.
+
+All the backend services are successfully implemented and running. 
+
+As you can see the problems are still there, so please help me to check through the entire project to see what's wrong and come up with a complete implementation solution for all of these issues.
+
+---
+
+ Good ! Now let's fix the bug in the gameplay. As you can see in the picture. User is able to make a match, all works great, but there are some bugs in the gameplay (/active-game-board/ page).
+		- The timer (counter) isn't configured dynamically properly, both users choose to play in a 2 minutes mode but the timer always show 30s.
+		- The game doesn't stop and come to result when there is a user hit the rules (WINING, LOSING, DRAWING, INVALID, etc).
+        - etc.
+Please help me to check through the entire project to find all the bugs and fix them.

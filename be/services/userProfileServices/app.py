@@ -23,11 +23,21 @@ def create_app(config_name='default'):
     cors.init_app(app, resources={r"/*": {"origins": frontend_url}}, supports_credentials=True)
     
     setup_logging(app)
+    setup_logging(app)
     init_supabase(app)
+    
+    # Initialize Event Listener
+    from event_listener import RedisEventListener
+    event_bus_url = app.config.get('EVENT_BUS_REDIS_URL', 'redis://localhost:6382/0')
+    listener = RedisEventListener(app, event_bus_url, ['domain_events'])
+    listener.start()
     
     # Register Blueprints
     app.register_blueprint(profile_bp, url_prefix='/profile')
     app.register_blueprint(internal_bp, url_prefix='/internal')
+    
+    from admin_routes import admin_bp
+    app.register_blueprint(admin_bp, url_prefix='/admin')
     
     @app.route('/health')
     def health_check():

@@ -183,9 +183,6 @@ def update_elo():
     Called by Game Service after game completion.
     Expects: { "user_id": "<uuid>", "elo_change": int, "outcome": "win"|"loss"|"draw" }
     """
-    import redis
-    import json
-
     api_key = request.headers.get('X-Internal-API-Key')
     expected_key = current_app.config.get('INTERNAL_API_KEY', 'dev_internal_key')
     
@@ -200,9 +197,21 @@ def update_elo():
     if not user_id or elo_change is None or outcome is None:
         return jsonify({"message": "Missing required fields"}), 400
 
+    try:
+        updated_profile = process_game_outcome(user_id, elo_change, outcome)
+        return jsonify(updated_profile.to_dict()), 200
+    except ValueError as e:
+        return jsonify({"message": str(e)}), 404
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+def process_game_outcome(user_id, elo_change, outcome):
+    import redis
+    import json
+    
     profile = UserProfile.query.filter_by(id=user_id).first()
     if not profile:
-        return jsonify({"message": "Profile not found"}), 404
+        raise ValueError("Profile not found")
 
     # Update stats
     profile.elo_rating += elo_change
@@ -238,7 +247,25 @@ def update_elo():
         except Exception as re:
             current_app.logger.error(f"Failed to publish Redis event: {re}")
 
-        return jsonify(profile.to_dict()), 200
+        return profile
     except Exception as e:
         db.session.rollback()
-        return jsonify({"message": str(e)}), 500
+        raise e
+    finally:
+         # Also notify Gateway directly so frontend knows to refresh stats (Avoiding race condition)
+        try:
+            redis_url = current_app.config.get('EVENT_BUS_REDIS_URL', 'redis://localhost:6382/0')
+            r = redis.from_url(redis_url)
+            gateway_message = {
+                'event': 'profile_updated',
+                'data': {
+                    'user_id': user_id,
+                    'new_elo': profile.elo_rating,
+                    'games_played': profile.games_played,
+                    'games_won': profile.games_won
+                },
+                'room': str(user_id)
+            }
+            r.publish('game_updates', json.dumps(gateway_message))
+        except Exception as gw_e:
+            current_app.logger.error(f"Failed to publish to Gateway: {gw_e}")

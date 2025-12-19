@@ -34,7 +34,7 @@ def _new_board() -> list:
     return [None] * (BOARD_SIZE * BOARD_SIZE)
 
 
-def create_game(game_id: str, player1_id: str, player2_id: Optional[str]) -> Dict[str, Any]:
+def create_game(game_id: str, player1_id: str, player2_id: Optional[str], settings: Dict[str, Any] = None) -> Dict[str, Any]:
     r = get_redis()
     state = {
         "player1_id": player1_id,
@@ -45,6 +45,7 @@ def create_game(game_id: str, player1_id: str, player2_id: Optional[str]) -> Dic
         "winner_id": None,
         "winning_line": None,
         "move_seq": 0,
+        "settings": settings or {},
         "created_at": int(time.time()),
         "started_at": int(time.time()) if player2_id else None,
         "updated_at": int(time.time()),

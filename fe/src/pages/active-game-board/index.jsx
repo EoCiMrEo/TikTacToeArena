@@ -100,6 +100,14 @@ const ActiveGameBoard = () => {
                   // Reconstruct simple history count
                   const movesMade = game.board.filter(c => c !== null).length;
                   setMoveHistory(Array(movesMade).fill("Move")); 
+                  
+                  // Initialize Timer from Settings
+                  if (game.settings && game.settings.timePerMove) {
+                      const timeStr = game.settings.timePerMove.toLowerCase();
+                      if (timeStr.includes('2 min')) setTimeRemaining(120);
+                      else if (timeStr.includes('5 min')) setTimeRemaining(300);
+                      else if (timeStr.includes('30 sec')) setTimeRemaining(30);
+                  }
               }
               
               setGameStatus(game.status);
@@ -135,12 +143,27 @@ const ActiveGameBoard = () => {
            // Update turn info
           const currentTurn = data.current_player_id === user.id;
           setIsMyTurn(currentTurn);
-          setIsMyTurn(currentTurn);
           setCurrentPlayer(data.current_player_id === data.player1_id ? 'X' : 'O');
-          setTimeRemaining(30); // Reset timer on move
           
+          // Reset timer based on settings
+          if (data.settings && data.settings.timePerMove) {
+              const timeStr = data.settings.timePerMove.toLowerCase();
+              let newTime = 30;
+              if (timeStr.includes('2 min')) newTime = 120;
+              else if (timeStr.includes('5 min')) newTime = 300;
+              else if (timeStr.includes('30 sec')) newTime = 30;
+              setTimeRemaining(newTime);
+          } else {
+             setTimeRemaining(30); 
+          }
+          
+          // Redundant Game End Check
           if (data.status === 'completed') {
-             // Handle completion via game_over event primarily, but this is a backup
+             console.log("Game completed detected via update");
+             // Force call onGameOver logic if status changed drastically
+             if (gameStatus !== 'completed') {
+                 onGameOver(data); 
+             }
           }
       };
 
