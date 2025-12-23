@@ -39,7 +39,7 @@ const ActiveGameBoard = () => {
       opponent: { id: null, name: 'Opponent', avatar: 'https://via.placeholder.com/150', elo: 1000 }
   });
   
-  const [timeRemaining, setTimeRemaining] = useState(30);
+  const [playerTimes, setPlayerTimes] = useState({ me: 120, opponent: 120 });
   const [isThinking, setIsThinking] = useState(false);
 
   // UI State
@@ -101,21 +101,46 @@ const ActiveGameBoard = () => {
                   const movesMade = game.board.filter(c => c !== null).length;
                   setMoveHistory(Array(movesMade).fill("Move")); 
                   
-                  // Initialize Timer from Settings
-                  if (game.settings && game.settings.timePerMove) {
-                      const timeStr = game.settings.timePerMove.toLowerCase();
-                      if (timeStr.includes('2 min')) setTimeRemaining(120);
-                      else if (timeStr.includes('5 min')) setTimeRemaining(300);
-                      else if (timeStr.includes('30 sec')) setTimeRemaining(30);
+                  // Initialize Timer from Settings / State
+                  if (game.p1_time !== undefined) {
+                       setPlayerTimes({
+                           me: amIPlayer1 ? game.p1_time : game.p2_time,
+                           opponent: amIPlayer1 ? game.p2_time : game.p1_time
+                       });
+                  } 
+                  else if (game.settings && game.settings.timer) {
+                       const initial = game.settings.timer.initial;
+                       setPlayerTimes({ me: initial, opponent: initial });
                   }
               }
               
               setGameStatus(game.status);
               
-              // Opponent Fetch (Placeholder logic for now)
+              // Opponent Fetch
+              let opponentId = null;
+              if (amIPlayer1) {
+                  opponentId = game.player2_id;
+              } else {
+                  opponentId = game.player1_id;
+              }
+
+              let opponentData = { id: opponentId, name: 'Opponent', avatar: 'https://via.placeholder.com/150', elo: 1000 };
+              
+              if (opponentId) {
+                   const oppRes = await userProfileService.getProfile(opponentId);
+                   if (oppRes.success) {
+                       opponentData = {
+                           id: opponentId,
+                           name: oppRes.data.username,
+                           avatar: oppRes.data.avatar_url || 'https://via.placeholder.com/150',
+                           elo: oppRes.data.elo_rating || 1000
+                       };
+                   }
+              }
+
               setPlayers(prev => ({
                   ...prev,
-                  opponent: { ...prev.opponent, name: "Opponent" } 
+                  opponent: opponentData
               }));
 
               if (game.status === 'completed') {
@@ -145,16 +170,16 @@ const ActiveGameBoard = () => {
           setIsMyTurn(currentTurn);
           setCurrentPlayer(data.current_player_id === data.player1_id ? 'X' : 'O');
           
-          // Reset timer based on settings
-          if (data.settings && data.settings.timePerMove) {
-              const timeStr = data.settings.timePerMove.toLowerCase();
-              let newTime = 30;
-              if (timeStr.includes('2 min')) newTime = 120;
-              else if (timeStr.includes('5 min')) newTime = 300;
-              else if (timeStr.includes('30 sec')) newTime = 30;
-              setTimeRemaining(newTime);
+          // Sync Timer
+          if (data.p1_time !== undefined && data.p2_time !== undefined) {
+               const amIP1 = data.player1_id === user.id;
+               setPlayerTimes({
+                   me: amIP1 ? data.p1_time : data.p2_time,
+                   opponent: amIP1 ? data.p2_time : data.p1_time
+               });
           } else {
-             setTimeRemaining(30); 
+               // Fallback / legacy support
+               // Default to 30 or whatever settings say if missing
           }
           
           // Redundant Game End Check
@@ -198,24 +223,48 @@ const ActiveGameBoard = () => {
 
   // Timer Logic
   useEffect(() => {
+    // Sync local timer from game state
+    // We need to know:
+    // 1. My time remaining (if I am p1, use p1_time)
+    // 2. Opponent time remaining
+    // 3. Who is currently moving
+    
+    // BUT checking `timeRemaining` variable: currently single variable.
+    // We should split or just show MY time if it's my turn? 
+    // Usually UI shows BOTH timers. 
+    // For now, let's keep `timeRemaining` as "Current Player's Time" to match UI or "My Time"?
+    // The current UI seems to show one timer? "0:19 Time Remaining". 
+    // Let's assume it shows the current turn's time.
+    
+    // UPDATE: We need to set `timeRemaining` to whomever is playing.
+  }, [gameState]); // trigger on state update
+
+  // Timer Countdown Logic
+  useEffect(() => {
     let interval;
-    if (gameStatus === 'active' && timeRemaining > 0) {
+    if (gameStatus === 'active') {
       interval = setInterval(() => {
-        setTimeRemaining(prev => {
-           if (prev <= 1) return 0;
-           return prev - 1;
+        setPlayerTimes(prev => {
+           // Decide who is playing
+           // isMyTurn is true -> decrement ME
+           // isMyTurn is false -> decrement OPPONENT
+           
+           if (isMyTurn) {
+               return { ...prev, me: Math.max(0, prev.me - 1) };
+           } else {
+               return { ...prev, opponent: Math.max(0, prev.opponent - 1) };
+           }
         });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [gameStatus, timeRemaining]); // Depend on timeRemaining to ensure clean intervals, or just gameStatus?
-  // Better dependency: [gameStatus] and check inside.
-  // Actually, standard countdown pattern:
-  // useEffect(() => {
-  //   if (status !== active) return;
-  //   const timer = setInterval(...)
-  //   return () => clearInterval(timer);
-  // }, [status]);
+  }, [gameStatus, isMyTurn]);
+  
+  // Note: `timeRemaining` is updated in `onGameUpdate`
+  // We need to ensure we set it to the correct value from server state.
+  // Server sends: p1_time, p2_time.
+  
+  // Handled in onGameUpdate and fetchGame.
 
   // Reset timer on turn change?
   // The backend store 'updated_at' which resets on move.
@@ -344,7 +393,6 @@ const ActiveGameBoard = () => {
       <GameContextHeader
         gameState={gameStatus}
         opponent={players.opponent}
-        gameTimer={timeRemaining}
         eloStakes={25}
         currentPlayer={isMyTurn ? 'you' : players.opponent.name}
         showBackButton={true}
@@ -374,19 +422,8 @@ const ActiveGameBoard = () => {
               capturedSquares={gameState.filter(cell => cell === (mySymbol === 'X' ? 'O' : 'X')).length}
               isConnected={isConnected}
               isThinking={!isMyTurn && gameStatus === 'active'}
+              timer={playerTimes.opponent}
             />
-
-            {/* Game Timer */}
-            <div className="flex justify-center">
-              <GameTimer
-                timeRemaining={timeRemaining}
-                totalTime={30}
-                isActive={gameStatus === 'active'}
-                onTimeUp={() => {}}
-                urgencyThreshold={10}
-                warningThreshold={5}
-              />
-            </div>
 
             {/* Game Board */}
             <div className="flex justify-center">
@@ -413,6 +450,7 @@ const ActiveGameBoard = () => {
               position="bottom"
               capturedSquares={gameState.filter(cell => cell === mySymbol).length}
               isConnected={isConnected}
+              timer={playerTimes.me}
             />
 
             {/* Mobile Game Actions */}

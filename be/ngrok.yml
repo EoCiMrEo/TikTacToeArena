@@ -1,0 +1,12 @@
+version: "2"
+authtoken: ${NGROK_AUTHTOKEN}
+tunnels:
+  auth-service:
+    proto: http
+    addr: auth-service:5001
+  userprofile-service:
+    proto: http
+    addr: userprofile-service:5000
+  frontend:
+    proto: http
+    addr: frontend:80

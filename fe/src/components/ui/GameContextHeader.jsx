@@ -88,15 +88,6 @@ const GameContextHeader = ({
           </div>
         )}
 
-        {gameTimer && (
-          <div className="flex items-center space-x-1">
-            <Icon name="Clock" size={16} color="var(--color-text-secondary)" />
-            <span className={`font-data font-medium ${getGameStateColor()}`}>
-              {formatTimer(gameTimer)}
-            </span>
-          </div>
-        )}
-
         {eloStakes && (
           <div className="flex items-center space-x-1">
             <Icon name="Trophy" size={16} color="var(--color-accent)" />
@@ -157,11 +148,7 @@ const GameContextHeader = ({
             
             {/* Mobile Game Info */}
             <div className="md:hidden">
-              {gameTimer && (
-                <span className={`font-data text-sm font-medium ${getGameStateColor()}`}>
-                  {formatTimer(gameTimer)}
-                </span>
-              )}
+               {/* Timer removed for chess clock UI */}
             </div>
 
             {/* Menu Button */}

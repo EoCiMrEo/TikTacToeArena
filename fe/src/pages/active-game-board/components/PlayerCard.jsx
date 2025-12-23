@@ -9,7 +9,8 @@ const PlayerCard = ({
   position = 'top',
   capturedSquares = 0,
   isConnected = true,
-  isThinking = false
+  isThinking = false,
+  timer = null // Time in seconds
 }) => {
   const {
     id = 'player1',
@@ -35,6 +36,13 @@ const PlayerCard = ({
 
   const getSymbolColor = () => {
     return symbol === 'X' ? 'var(--color-primary)' : 'var(--color-secondary)';
+  };
+
+  const formatTimer = (seconds) => {
+    if (seconds === null || seconds === undefined) return '--:--';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -113,8 +121,23 @@ const PlayerCard = ({
           </div>
         </div>
 
+
+        {/* Timer Display - Chess Clock Style */}
+        <div className={`
+            flex items-center justify-center px-4 py-2 rounded-lg ml-4 min-w-[80px]
+            ${isCurrentPlayer ? 'bg-surface-elevated border-2 border-primary shadow-md' : 'bg-surface-secondary border border-border'}
+            transition-all duration-300
+        `}>
+             <span className={`
+                font-mono text-xl font-bold tracking-wider
+                ${isCurrentPlayer ? 'text-primary' : 'text-text-secondary'}
+             `}>
+                {formatTimer(timer)}
+             </span>
+        </div>
+
         {/* Game Stats */}
-        <div className="flex-shrink-0 text-right">
+        <div className="flex-shrink-0 text-right pl-4 border-l border-border ml-4">
           <div className="text-sm font-medium text-text-primary">
             {capturedSquares}
           </div>

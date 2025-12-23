@@ -87,19 +87,20 @@ class Matcher:
         # Determine settings from p1 (since they matched on speed, p1.game_speed == p2.game_speed)
         speed = p1.game_speed or 'standard'
         
-        # Map speed to time_per_move string for UI (could be done in FE, but let's send normalized data)
-        # speed: 'blitz' (30s), 'standard' (2m), 'extended' (5m)
+        # Map speed to time settings (Chess style: initial + increment)
+        # speed: 'blitz' (30s+3s), 'standard' (2m+5s), 'extended' (5m+10s)
         time_map = {
-            'blitz': '30 seconds',
-            'standard': '2 minutes',
-            'extended': '5 minutes'
+            'blitz': {'initial': 30, 'increment': 3, 'label': '30s + 3s'},
+            'standard': {'initial': 120, 'increment': 5, 'label': '2m + 5s'},
+            'extended': {'initial': 300, 'increment': 10, 'label': '5m + 10s'}
         }
-        time_per_move = time_map.get(speed, '2 minutes')
+        timer_settings = time_map.get(speed, {'initial': 120, 'increment': 5, 'label': '2m + 5s'})
 
         game_settings = {
             "speed": speed,
-            "timePerMove": time_per_move,
-            "eloStakes": 24 # Dynamic later?
+            "timer": timer_settings,
+            "timePerMove": timer_settings['label'], # Keep for backward compatibility if needed
+            "eloStakes": 24 
         }
 
         # 1. Call Game Service to create game

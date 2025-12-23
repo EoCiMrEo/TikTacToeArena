@@ -46,6 +46,9 @@ def create_game(game_id: str, player1_id: str, player2_id: Optional[str], settin
         "winning_line": None,
         "move_seq": 0,
         "settings": settings or {},
+        "p1_time": (settings.get('timer', {}).get('initial') if settings else 120),
+        "p2_time": (settings.get('timer', {}).get('initial') if settings else 120),
+        "last_move_time": int(time.time()) if player2_id else None,
         "created_at": int(time.time()),
         "started_at": int(time.time()) if player2_id else None,
         "updated_at": int(time.time()),
@@ -72,25 +75,48 @@ local state_raw = redis.call('GET', KEYS[1])
 if not state_raw then return cjson.encode({ err = 'NOT_FOUND' }) end
 local st = cjson.decode(state_raw)
 
--- basic validations
+-- Args: user_id, pos, ttl
 local user_id = ARGV[1]
 local pos = tonumber(ARGV[2])
 local board_size = 13
 local win_len = 5
 local max_idx = (board_size * board_size) - 1
+-- Current server time for timer calc
+local now = tonumber(redis.call('TIME')[1])
 
 if st.status ~= 'active' then return cjson.encode({ err = 'NOT_ACTIVE' }) end
 if st.current_player_id ~= user_id then return cjson.encode({ err = 'NOT_YOUR_TURN' }) end
 if pos < 0 or pos > max_idx then return cjson.encode({ err = 'BAD_POS' }) end
 if st.board[pos + 1] ~= cjson.null then return cjson.encode({ err = 'CELL_TAKEN' }) end
 
--- apply move
+-- 1. Apply Move
 local symbol = (user_id == st.player1_id) and 'X' or 'O'
 st.board[pos + 1] = symbol
 st.move_seq = (st.move_seq or 0) + 1
-st.updated_at = tonumber(redis.call('TIME')[1])
 
--- Win Check Helper
+-- 2. Timer Logic (Chess Style)
+local is_p1 = (user_id == st.player1_id)
+local settings = st.settings or {}
+local timer_cfg = settings.timer or { initial = 120, increment = 5 } 
+local increment = timer_cfg.increment or 0
+
+-- Deduct time used (if not first moves? usually applies always except maybe very first)
+-- Actually, started_at is when p2 joined.
+local last_time = st.last_move_time or st.started_at or now
+local elapsed = now - last_time
+
+if is_p1 then
+   st.p1_time = (st.p1_time or timer_cfg.initial) - elapsed + increment
+   if st.p1_time < 0 then st.p1_time = 0 end -- Timeout check could happen here
+else
+   st.p2_time = (st.p2_time or timer_cfg.initial) - elapsed + increment
+   if st.p2_time < 0 then st.p2_time = 0 end
+end
+
+st.last_move_time = now
+st.updated_at = now
+
+-- 3. Win Check
 local function get_cell(b, r, c)
     if r < 0 or r >= board_size or c < 0 or c >= board_size then return nil end
     local idx = (r * board_size) + c
@@ -114,7 +140,7 @@ for _, d in ipairs(directions) do
     local count = 1
     local line = {pos}
     
-    -- Check positive direction
+    -- Forward
     for i = 1, win_len - 1 do
         local r, c = row + (dr * i), col + (dc * i)
         if get_cell(st.board, r, c) == symbol then
@@ -125,7 +151,7 @@ for _, d in ipairs(directions) do
         end
     end
     
-    -- Check negative direction
+    -- Backward
     for i = 1, win_len - 1 do
         local r, c = row - (dr * i), col - (dc * i)
         if get_cell(st.board, r, c) == symbol then
@@ -146,9 +172,14 @@ end
 if winner then
   st.status = 'completed'
   st.winning_line = winning_line
-  st.winner_id = (winner == 'X') and st.player1_id or st.player2_id
+  st.winner_id = user_id
+elseif st.p1_time == 0 or st.p2_time == 0 then
+  -- Handle Timeout
+  st.status = 'completed'
+  st.winner_id = (st.p1_time == 0) and st.player2_id or st.player1_id
+  st.winning_line = {} -- No line for timeout
 else
-  -- check draw
+  -- Check draw
   local full = true
   for i=1, (board_size * board_size) do
     if st.board[i] == cjson.null then full = false break end
@@ -157,7 +188,7 @@ else
     st.status = 'completed'
     st.winner_id = cjson.null
   else
-    -- switch turn
+    -- Switch Turn
     if st.current_player_id == st.player1_id then
       st.current_player_id = st.player2_id
     else
@@ -166,7 +197,6 @@ else
   end
 end
 
--- persist
 redis.call('SETEX', KEYS[1], tonumber(ARGV[3]), cjson.encode(st))
 return cjson.encode({ ok = true, state = st })
 """
